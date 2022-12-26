@@ -2,7 +2,7 @@
 
 HLLスキームをWAFで高精度化した移動床計算モデルです．
 
-コードはFortranで書かれております．Fortran環境がない場合は下記を参照にIntel Fortral Open APIをインストールしてください．
+コードはFortranで書かれております．Fortran環境がない場合は下記を参照にIntel Fortran Open APIをインストールしてください．
 
 https://qiita.com/Kazutake/items/a069f86d21ca43b6c153
 
