@@ -1332,25 +1332,22 @@ program SWE_HLL
 
             !  HLL solver for estimating flux at star region
 
-        call hllx1storder(qsta,wqx,sl,sr,wh,nx,ny)
-        call hllx1storder(fsta,ffx,sl,sr,wqx,nx,ny)
+        call hllx1storder(f1,wqx,sl,sr,wh,nx,ny)
+        call hllx1storder(f2,ffx,sl,sr,wqx,nx,ny)
 
-        call dqxcal(dh,wh,epsilon,nx,ny)
+!$omp do private(i,j,hc,ust,dqc,dql,dqr,cc,phi,ucc,wdq)
+        do j=1,ny-1
+            do i=0,nx-1
+                ust = 0.5d0*(u(i,j)+u(i+1,j))
+                if(ust>0) then
+                    f3(i,j) = f1(i,j)*v(i,j)
+                else
+                    f3(i,j) = f1(i,j)*v(i+1,j)
+                end if
+            end do
+        end do
 
-            ! TVD WAF solver for estimating fluxes at i+1/2
-
-        call tvdwafx(f1,qsta,wqx,dh,sl,sr,dx,dt,nx,ny)
-        call tvdwafx(f2,fsta,ffx,dh,sl,sr,dx,dt,nx,ny)
-
-        call tvdwafx_qy(f3,wqy,wh,f1,dx,dt,nx,ny,hmin,epsilon)
-
-        call hllzx1storder(qbsta,qbx1,sl,sc,sr,wz,u,v,snm,dx,wqx,wh,nx,ny)
-
-        call dqxcal(dh,wz,epsilon,nx,ny)
-
-        call tvdwafxz(f4,qbsta,qbx1,wz,dh,sl,sc,sr,u,v,wh,dx,dt,g,nx,ny)
-
-            !  solve splitted system equation for x direction
+        call hllzx1storder(f4,qbx1,sl,sc,sr,wz,u,v,snm,dx,wqx,wh,nx,ny)
 
         call systemx(h,wh,qx,wqx,qy,wqy,z,wz,f1,f2,f3,f4,qbx2,qbtsc,u,v,sr,sc,sl,dz,snm,g,poro,hmin,mf,tt,bedtime,rdx,rdy,dt,nx,ny)
 
@@ -1386,12 +1383,8 @@ program SWE_HLL
         end do
 !$omp end single
 
-        call hlly1storder(qsta,qy,sl,sr,h,nx,ny)
-        call hlly1storder(fsta,ffy,sl,sr,qy,nx,ny)
-
-        call dqycal(dh,h,epsilon,nx,ny)
-
-        call tvdwafy(f1,qsta,qy,dh,sl,sr,dy,dt,nx,ny)
+        call hlly1storder(f1,qy,sl,sr,h,nx,ny)
+        call hlly1storder(f3,ffy,sl,sr,qy,nx,ny)
 
 !$omp single
         do i=0,nx
@@ -1400,16 +1393,21 @@ program SWE_HLL
         end do
 !$omp end single
 
-        call tvdwafy(f3,fsta,ffy,dh,sl,sr,dy,dt,nx,ny)
-
-        call tvdwafy_qx(f2,qx,h,f1,dy,dt,nx,ny,hmin,epsilon)
-
-        call hllzy1storder(qbsta,qby1,sl,sc,sr,z,u,v,h,nx,ny)
         
-        call dqycal(dh,z,epsilon,nx,ny)
+!$omp do private(i,j,hc,ust,dqc,dql,dqr,cc,phi,ucc,wdq)
+        do j=0,ny-1
+            do i=1,nx-1
+                ust = 0.5d0*(v(i,j)+v(i,j+1))
+                if(ust>0) then
+                    f2(i,j) = f1(i,j)*u(i,j)
+                else
+                    f2(i,j) = f1(i,j)*u(i,j+1)
+                end if
+            end do
+        end do
 
-        call tvdwafyz(f4,qbsta,qby1,z,dh,sl,sc,sr,u,v,h,dy,dt,g,nx,ny)
-
+        call hllzy1storder(f4,qby1,sl,sc,sr,z,u,v,h,nx,ny)
+        
         call systemy(wh,h,wqx,qx,wqy,qy,wz,z,f1,f2,f3,f4,qby2,qbtsc,u,v,sr,sc,sl,dz,snm,g,poro,hmin,mf,tt,bedtime,rdx,rdy,dt,nx,ny)
 
         call boundary(wh,wqx,wqy,wz,dz,dis,wid,snm,ib,dy,nx,ny)
